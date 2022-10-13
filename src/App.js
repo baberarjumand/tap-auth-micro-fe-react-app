@@ -2,9 +2,20 @@
 import "./App.css";
 import { useParams } from "react-router-dom";
 import { useEffect } from "react";
+import { useAccount, useConnect, useSignMessage, useDisconnect } from "wagmi";
+import { InjectedConnector } from "wagmi/connectors/injected";
+// import axios from "axios";
 
 function App() {
+  // wagmi hooks
+  const { isConnected } = useAccount();
+  const { disconnectAsync } = useDisconnect();
+  const { signMessageAsync } = useSignMessage();
+  const { connectAsync } = useConnect();
+
+  // route param
   const { walletType } = useParams();
+
   const WALLET_TYPES = {
     metamask: "wallet-metamask",
     walletconnect: "wallet-walletconnect",
@@ -21,17 +32,101 @@ function App() {
         connectWalletConnectWallet();
         break;
       default:
-        console.log("Wallet Type not found!");
+        console.error("Wallet Type not found!");
     }
-  }, [WALLET_TYPES.metamask, WALLET_TYPES.walletconnect, walletType]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [""]);
 
-  function connectMetamaskWallet() {
-    console.log("Connecting Metamask Wallet...");
-  }
+  const connectMetamaskWallet = async () => {
+    try {
+      console.log("Connecting Metamask Wallet...");
+
+      // disconnects the web3 provider if it's already active
+      // metamask does not support programmatically disconnecting a wallet
+      if (isConnected) {
+        await disconnectAsync();
+      }
+
+      // enabling the web3 provider metamask
+      // connect wallet to get public wallet address
+      const { account, chain } = await connectAsync({
+        connector: new InjectedConnector(),
+      });
+
+      console.log("Wallet Connected Successfully!");
+      console.log("Wallet Account:", account);
+      console.log("Wallet Chain:", chain);
+
+      await requestSignatureMessage(account, chain);
+    } catch (error) {
+      console.error("Error in connectMetamaskWallet!", error);
+    }
+  };
 
   function connectWalletConnectWallet() {
     console.log("Connecting WalletConnect Wallet...");
   }
+
+  const requestSignatureMessage = async (walletAddress, chain) => {
+    try {
+      console.log(
+        "Req Sign URL: " +
+          process.env.REACT_APP_AUTH_SERVER_URL +
+          process.env.REACT_APP_REQUEST_MESSAGE_ENDPOINT
+      );
+
+      const requestMessageOptions = {
+        method: "POST",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+          "X-API-KEY": process.env.REACT_APP_MORALIS_WEB3_API_KEY,
+        },
+        body: JSON.stringify({
+          timeout: 15,
+          domain: process.env.REACT_APP_DOMAIN,
+          chainId: chain.id,
+          address: walletAddress,
+          uri: process.env.REACT_APP_DOMAIN_URI,
+        }),
+      };
+
+      // request message to sign from server
+      const response = await fetch(
+        process.env.REACT_APP_AUTH_SERVER_URL +
+          process.env.REACT_APP_REQUEST_MESSAGE_ENDPOINT,
+        requestMessageOptions
+      );
+      const jsonResponse = await response.json();
+      console.log("Signature Request Succesful!", jsonResponse);
+      const messageToSign = jsonResponse.message;
+      // signing the received message via metamask
+      const signature = await signMessageAsync({ message: messageToSign });
+      console.log("User signed successfully:", signature);
+
+      const verifySignatureOptions = {
+        method: "POST",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+          "X-API-KEY": process.env.REACT_APP_MORALIS_WEB3_API_KEY,
+        },
+        body: JSON.stringify({ message: messageToSign, signature: signature }),
+      };
+
+      const res = await fetch(
+        process.env.REACT_APP_AUTH_SERVER_URL +
+          process.env.REACT_APP_VERIFY_SIGNATURE_ENDPOINT,
+        verifySignatureOptions
+      );
+      const jsonRes = await res.json();
+      console.log("Signature Verification Succesful!", jsonRes);
+
+      // verify signature
+    } catch (error) {
+      console.error("Error in requestSignatureMessage!", error);
+    }
+  };
 
   return (
     <div className="App">

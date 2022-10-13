@@ -5,11 +5,19 @@ import App from "./App";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 // import reportWebVitals from './reportWebVitals';
 
+import {
+  createClient,
+  configureChains,
+  defaultChains,
+  WagmiConfig,
+} from "wagmi";
+import { publicProvider } from "wagmi/providers/public";
+
 const router = createBrowserRouter([
   {
     path: "/:walletType",
     // element: <div>Hello world!</div>,
-    element: <App></App>,
+    element: <App />,
   },
   // {
   //   path: "/",
@@ -18,14 +26,31 @@ const router = createBrowserRouter([
   // },
 ]);
 
+const { provider, webSocketProvider } = configureChains(defaultChains, [
+  publicProvider(),
+]);
+
+const client = createClient({
+  provider,
+  webSocketProvider,
+  autoConnect: false,
+});
+
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   // <React.StrictMode>
   //   <App />
   // </React.StrictMode>
-  <React.StrictMode>
-    <RouterProvider router={router} />
-  </React.StrictMode>
+
+  // <React.StrictMode>
+  //   <RouterProvider router={router} />
+  // </React.StrictMode>
+
+  <WagmiConfig client={client}>
+    {/* <React.StrictMode> */}
+      <RouterProvider router={router} />
+    {/* </React.StrictMode> */}
+  </WagmiConfig>
 );
 
 // If you want to start measuring performance in your app, pass a function
