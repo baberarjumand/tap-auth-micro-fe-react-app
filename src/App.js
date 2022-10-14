@@ -114,15 +114,23 @@ function App() {
         body: JSON.stringify({ message: messageToSign, signature: signature }),
       };
 
+      // verify signature
       const res = await fetch(
         process.env.REACT_APP_AUTH_SERVER_URL +
           process.env.REACT_APP_VERIFY_SIGNATURE_ENDPOINT,
         verifySignatureOptions
       );
-      const jsonRes = await res.json();
-      console.log("Signature Verification Succesful!", jsonRes);
+      console.log("res:", res);
 
-      // verify signature
+      if (res.status === 201) {
+        const jsonRes = await res.json();
+        console.log("Signature Verification Succesful!", jsonRes);
+        alert("Signature Verification Succesful!");
+
+        window.location.href = process.env.REACT_APP_IONIC_APP_BASE_URL + '/auth/callback?token=' + jsonRes.profileId;
+      } else {
+        throw Error("Signature Verification Failed!");
+      }
     } catch (error) {
       console.error("Error in requestSignatureMessage!", error);
     }
