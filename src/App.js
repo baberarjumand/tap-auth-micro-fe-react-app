@@ -127,7 +127,14 @@ function App() {
         console.log("Signature Verification Succesful!", jsonRes);
         alert("Signature Verification Succesful!");
 
-        window.location.href = process.env.REACT_APP_IONIC_APP_BASE_URL + '/auth/callback?token=' + jsonRes.profileId;
+        // window.location.href =
+        //   process.env.REACT_APP_IONIC_APP_BASE_URL +
+        //   "/auth/callback?token=" +
+        //   jsonRes.profileId;
+        window.location.href =
+          process.env.REACT_APP_IONIC_APP_BASE_URL +
+          "/auth/callback?token=" +
+          walletAddress;
       } else {
         throw Error("Signature Verification Failed!");
       }
