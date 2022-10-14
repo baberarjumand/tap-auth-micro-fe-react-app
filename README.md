@@ -1,3 +1,5 @@
+#  tap-auth-micro-fe-react-app
+
 This demo app was developed as PoC for an auth flow, which involves authencating a user using their Metamask wallet.
 
 [`wagmi`](https://wagmi.sh/) is used to connect a user's wallet and sign a custom message.
